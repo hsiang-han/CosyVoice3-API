@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir transformers==4.51.3
 # openai-whisper uses pkg_resources in setup.py; modern setuptools in pip's
 # build isolation removes it, so we install whisper with --no-build-isolation
 # using the system setuptools which still has pkg_resources
-RUN pip install --no-cache-dir "setuptools<71" wheel cython numpy && \
+RUN pip install --no-cache-dir "setuptools<71" wheel cython "numpy<2" && \
     cd cosyvoice_repo && \
     grep -iv "torch\|torchaudio\|tensorrt\|deepspeed\|transformers\|openai-whisper" requirements.txt > requirements_filtered.txt && \
     pip install --no-cache-dir -r requirements_filtered.txt && \
