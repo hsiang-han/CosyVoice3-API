@@ -1,0 +1,25 @@
+name: cosyvoice3-api
+services:
+  cosyvoice3:
+    image: ghcr.io/hsiang-han/cosyvoice3-api:latest
+    container_name: cosyvoice3-api
+    build:
+      context: ../..
+      dockerfile: docker/gpu/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - /mnt/user/appdata/cosyvoice3-api/models:/root/.cache/modelscope/hub
+    environment:
+      - MODEL_DIR=FunAudioLLM/Fun-CosyVoice3-0.5B-2512
+      - FP16=true
+      - PORT=8080
+    shm_size: "2gb"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped

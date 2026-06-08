@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.env
+.venv/
+venv/
+models/
+*.pt
+*.bin
+*.onnx
+.cache/
+pretrained_models/

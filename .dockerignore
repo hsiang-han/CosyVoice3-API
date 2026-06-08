@@ -1,0 +1,6 @@
+.git/
+.github/
+.gitignore
+*.md
+templates/
+pretrained_models/

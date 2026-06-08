@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>CosyVoice3-API</Name>
+  <Repository>ghcr.io/hsiang-han/cosyvoice3-api:latest</Repository>
+  <Registry>https://ghcr.io</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/hsiang-han/CosyVoice3-API/issues</Support>
+  <Project>https://github.com/hsiang-han/CosyVoice3-API</Project>
+  <Overview>OpenAI-compatible Text-to-Speech API powered by CosyVoice 3 (Alibaba FunAudioLLM). State-of-the-art Chinese TTS with 18 dialects, 9 languages, built-in voices, and zero-shot voice cloning. CUDA 12.8 (Blackwell/Ada). First start downloads model. Requires NVIDIA GPU with driver 570+.</Overview>
+  <Category>Productivity: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/docs</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/hsiang-han/unraid_templates/main/templates/cosyvoice3-api.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/hsiang-han/unraid_templates/main/assets/cosyvoice3-api-icon.png</Icon>
+  <ExtraParams>--gpus all --shm-size=2g</ExtraParams>
+
+  <Config Name="API Port" Target="8080" Default="8080" Mode="tcp" Description="OpenAI-compatible TTS API port. Swagger docs at /docs" Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+
+  <Config Name="Model Cache" Target="/root/.cache/modelscope/hub" Default="/mnt/user/appdata/cosyvoice3-api/models" Mode="rw" Description="Model download cache. First run downloads ~2GB." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/cosyvoice3-api/models</Config>
+
+  <Config Name="Model ID" Target="MODEL_DIR" Default="FunAudioLLM/Fun-CosyVoice3-0.5B-2512" Mode="" Description="ModelScope model ID" Type="Variable" Display="advanced" Required="true" Mask="false">FunAudioLLM/Fun-CosyVoice3-0.5B-2512</Config>
+
+  <Config Name="FP16" Target="FP16" Default="true" Mode="" Description="Half-precision inference. Reduces VRAM by ~50%. Disable (false) only if you experience quality issues." Type="Variable" Display="always" Required="false" Mask="false">true</Config>
+
+  <Config Name="Port" Target="PORT" Default="8080" Mode="" Description="Internal API server port" Type="Variable" Display="advanced" Required="false" Mask="false">8080</Config>
+
+  <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="all" Mode="" Description="GPU selection (all, 0, 1, etc.)" Type="Variable" Display="advanced" Required="false" Mask="false">all</Config>
+
+  <Config Name="NVIDIA Driver Capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,utility" Mode="" Description="NVIDIA driver capabilities" Type="Variable" Display="advanced" Required="false" Mask="false">compute,utility</Config>
+</Container>
