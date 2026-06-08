@@ -7,7 +7,8 @@ ARG COSYVOICE_BRANCH=main
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         python${PYTHON_VERSION} python${PYTHON_VERSION}-venv python${PYTHON_VERSION}-dev \
-        python3-pip git git-lfs sox libsox-dev ffmpeg curl && \
+        python3-pip git git-lfs sox libsox-dev ffmpeg curl \
+        g++ build-essential && \
     ln -sf /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && \
     ln -sf /usr/bin/python${PYTHON_VERSION} /usr/bin/python && \
     python -m pip install --upgrade pip && \
@@ -24,10 +25,13 @@ RUN git clone --depth 1 -b ${COSYVOICE_BRANCH} ${COSYVOICE_REPO} cosyvoice_repo 
 RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu128
 
 # Install CosyVoice dependencies
-# openai-whisper is in requirements.txt but not needed for TTS, skip it to avoid build issues
-RUN pip install --no-cache-dir setuptools wheel && \
+# Filter out packages not needed for basic TTS inference:
+# - openai-whisper: ASR evaluation only, breaks pip build isolation
+# - tensorrt*: TRT acceleration (optional, adds 3GB+)
+# - deepspeed: training only
+RUN pip install --no-cache-dir setuptools wheel cython numpy && \
     cd cosyvoice_repo && \
-    grep -v "openai-whisper" requirements.txt > requirements_filtered.txt && \
+    grep -iv "openai-whisper\|tensorrt\|deepspeed" requirements.txt > requirements_filtered.txt && \
     pip install --no-cache-dir -r requirements_filtered.txt && \
     pip install --no-cache-dir modelscope onnxruntime-gpu
 
