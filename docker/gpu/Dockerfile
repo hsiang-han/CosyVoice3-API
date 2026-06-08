@@ -26,12 +26,12 @@ RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pyt
 
 # Install CosyVoice dependencies
 # Filter out packages not needed for basic TTS inference:
-# - openai-whisper: ASR evaluation only, breaks pip build isolation
 # - tensorrt*: TRT acceleration (optional, adds 3GB+)
 # - deepspeed: training only
+# Note: openai-whisper is kept because cosyvoice.cli.frontend imports it
 RUN pip install --no-cache-dir setuptools wheel cython numpy && \
     cd cosyvoice_repo && \
-    grep -iv "openai-whisper\|tensorrt\|deepspeed" requirements.txt > requirements_filtered.txt && \
+    grep -iv "tensorrt\|deepspeed" requirements.txt > requirements_filtered.txt && \
     pip install --no-cache-dir -r requirements_filtered.txt && \
     pip install --no-cache-dir modelscope onnxruntime-gpu
 
