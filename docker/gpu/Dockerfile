@@ -36,7 +36,6 @@ COPY docker/scripts/entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 ENV MODEL_DIR=FunAudioLLM/Fun-CosyVoice3-0.5B-2512 \
-    MODEL_SOURCE=modelscope \
     HF_ENDPOINT=https://huggingface.co \
     FP16=true \
     PORT=8080 \

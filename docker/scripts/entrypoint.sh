@@ -3,7 +3,6 @@ set -e
 
 echo "=== CosyVoice3-API ==="
 echo "Model: ${MODEL_DIR}"
-echo "Source: ${MODEL_SOURCE}"
 echo "FP16:  ${FP16}"
 echo "Port:  ${PORT}"
 echo "======================"
@@ -16,11 +15,8 @@ elif [ -d "${MODEL_LOCAL_PATH}" ] && [ -f "${MODEL_LOCAL_PATH}/cosyvoice3.yaml" 
     echo "Model found in cache: ${MODEL_LOCAL_PATH}"
     export MODEL_DIR="${MODEL_LOCAL_PATH}"
 else
-    echo "Downloading model..."
-    if [ "${MODEL_SOURCE}" = "huggingface" ]; then
-        echo "Source: HuggingFace (${HF_ENDPOINT})"
-        pip install -q huggingface_hub 2>/dev/null || true
-        python -c "
+    echo "Downloading model from HuggingFace (${HF_ENDPOINT})..."
+    python -c "
 from huggingface_hub import snapshot_download
 import os
 snapshot_download(
@@ -29,13 +25,7 @@ snapshot_download(
     endpoint=os.environ.get('HF_ENDPOINT', 'https://huggingface.co'),
 )
 "
-        export MODEL_DIR="${MODEL_LOCAL_PATH}"
-    else
-        echo "Source: ModelScope"
-        # modelscope downloads to its own cache structure
-        # Let CosyVoice handle it natively via snapshot_download
-        echo "Model will be downloaded by CosyVoice on startup"
-    fi
+    export MODEL_DIR="${MODEL_LOCAL_PATH}"
 fi
 
 exec python -m uvicorn api.main:app \
