@@ -24,9 +24,11 @@ RUN git clone --depth 1 -b ${COSYVOICE_BRANCH} ${COSYVOICE_REPO} cosyvoice_repo 
 RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu128
 
 # Install CosyVoice dependencies
-RUN pip install --no-cache-dir setuptools && \
+# openai-whisper is in requirements.txt but not needed for TTS, skip it to avoid build issues
+RUN pip install --no-cache-dir setuptools wheel && \
     cd cosyvoice_repo && \
-    pip install --no-cache-dir -r requirements.txt && \
+    grep -v "openai-whisper" requirements.txt > requirements_filtered.txt && \
+    pip install --no-cache-dir -r requirements_filtered.txt && \
     pip install --no-cache-dir modelscope onnxruntime-gpu
 
 # Install API dependencies
