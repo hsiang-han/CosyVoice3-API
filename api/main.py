@@ -8,6 +8,7 @@ from typing import Optional
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
+from pydantic import BaseModel
 
 MODEL_DIR = os.getenv("MODEL_DIR", "FunAudioLLM/Fun-CosyVoice3-0.5B-2512")
 FP16 = os.getenv("FP16", "true").lower() == "true"
@@ -66,22 +67,24 @@ async def list_voices():
     return {"voices": _model.list_available_spks()}
 
 
+class SpeechRequest(BaseModel):
+    model: Optional[str] = "cosyvoice3"
+    input: str
+    voice: Optional[str] = None
+    response_format: str = "wav"
+    speed: float = 1.0
+    instruct_text: Optional[str] = None
+
+
 @app.post("/v1/audio/speech")
-async def text_to_speech(
-    model: str = Form(default="cosyvoice3"),
-    input: str = Form(...),
-    voice: str = Form(default=None),
-    response_format: str = Form(default="wav"),
-    speed: float = Form(default=1.0),
-    instruct_text: str = Form(default=None),
-):
+async def text_to_speech(req: SpeechRequest):
     if not _model:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
-    if not input.strip():
+    if not req.input.strip():
         raise HTTPException(status_code=400, detail="Input text is empty")
 
-    audio_data = _synthesize(input, voice, instruct_text, speed)
+    audio_data = _synthesize(req.input, req.voice, req.instruct_text, req.speed)
 
     wav_bytes = _to_wav(audio_data)
     return Response(content=wav_bytes, media_type="audio/wav")
