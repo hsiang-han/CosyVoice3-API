@@ -20,10 +20,14 @@ RUN git clone --depth 1 -b ${COSYVOICE_BRANCH} ${COSYVOICE_REPO} cosyvoice_repo 
 RUN pip install --no-cache-dir transformers==4.51.3
 
 # Install CosyVoice dependencies (skip torch since base image has it)
-RUN pip install --no-cache-dir "setuptools>=68" wheel cython numpy && \
+# openai-whisper uses pkg_resources in setup.py; modern setuptools in pip's
+# build isolation removes it, so we install whisper with --no-build-isolation
+# using the system setuptools which still has pkg_resources
+RUN pip install --no-cache-dir "setuptools<71" wheel cython numpy && \
     cd cosyvoice_repo && \
-    grep -iv "torch\|torchaudio\|tensorrt\|deepspeed\|transformers" requirements.txt > requirements_filtered.txt && \
+    grep -iv "torch\|torchaudio\|tensorrt\|deepspeed\|transformers\|openai-whisper" requirements.txt > requirements_filtered.txt && \
     pip install --no-cache-dir -r requirements_filtered.txt && \
+    pip install --no-cache-dir --no-build-isolation openai-whisper==20231117 && \
     pip install --no-cache-dir modelscope onnxruntime-gpu huggingface_hub
 
 # Install API dependencies
