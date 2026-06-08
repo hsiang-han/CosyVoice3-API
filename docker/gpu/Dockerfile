@@ -22,9 +22,8 @@ RUN pip install --no-cache-dir transformers==4.51.3
 # Install CosyVoice dependencies (skip torch since base image has it)
 RUN pip install --no-cache-dir "setuptools>=68" wheel cython numpy && \
     cd cosyvoice_repo && \
-    grep -iv "torch\|torchaudio\|tensorrt\|deepspeed\|transformers\|openai-whisper" requirements.txt > requirements_filtered.txt && \
+    grep -iv "torch\|torchaudio\|tensorrt\|deepspeed\|transformers" requirements.txt > requirements_filtered.txt && \
     pip install --no-cache-dir -r requirements_filtered.txt && \
-    pip install --no-cache-dir openai-whisper && \
     pip install --no-cache-dir modelscope onnxruntime-gpu huggingface_hub
 
 # Install API dependencies
