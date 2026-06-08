@@ -23,8 +23,9 @@ RUN git clone --depth 1 -b ${COSYVOICE_BRANCH} ${COSYVOICE_REPO} cosyvoice_repo 
 # Install PyTorch with CUDA 12.8
 RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu128
 
-# Install CosyVoice dependencies (pynini may fail, it's optional for text normalization)
-RUN cd cosyvoice_repo && \
+# Install CosyVoice dependencies
+RUN pip install --no-cache-dir setuptools && \
+    cd cosyvoice_repo && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir modelscope onnxruntime-gpu
 
