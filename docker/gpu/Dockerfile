@@ -28,7 +28,8 @@ RUN pip install --no-cache-dir "setuptools<71" wheel cython numpy && \
     grep -iv "torch\|torchaudio\|tensorrt\|deepspeed\|transformers\|openai-whisper" requirements.txt > requirements_filtered.txt && \
     pip install --no-cache-dir -r requirements_filtered.txt && \
     pip install --no-cache-dir --no-build-isolation openai-whisper==20231117 && \
-    pip install --no-cache-dir modelscope onnxruntime-gpu huggingface_hub
+    pip install --no-cache-dir modelscope onnxruntime-gpu huggingface_hub && \
+    pip install --no-cache-dir --force-reinstall torchvision --index-url https://download.pytorch.org/whl/cu128
 
 # Install API dependencies
 RUN pip install --no-cache-dir fastapi uvicorn[standard] python-multipart numpy soundfile
