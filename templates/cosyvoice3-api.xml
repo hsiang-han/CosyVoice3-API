@@ -9,8 +9,8 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/hsiang-han/CosyVoice3-API/issues</Support>
   <Project>https://github.com/hsiang-han/CosyVoice3-API</Project>
-  <Overview>OpenAI-compatible Text-to-Speech API powered by CosyVoice 3 (Alibaba FunAudioLLM). State-of-the-art Chinese TTS with 18 dialects, 9 languages, built-in voices, and zero-shot voice cloning. CUDA 12.8 (Blackwell/Ada). First start downloads model. Requires NVIDIA GPU with driver 570+.</Overview>
-  <Category>Productivity: Tools:</Category>
+  <Overview>OpenAI-compatible Text-to-Speech API powered by CosyVoice 3 (Alibaba FunAudioLLM). State-of-the-art Chinese TTS with 18 dialects, 9 languages, built-in voices, instruction-based control, and zero-shot voice cloning. CUDA 12.8 (Blackwell/Ada/Ampere). First start downloads model files (~10GB) from HuggingFace. Supports RTX 50-series GPUs. China users: set HF_ENDPOINT to https://hf-mirror.com for faster downloads. Requires NVIDIA GPU with driver 550+.</Overview>
+  <Category>AI: Productivity: Tools:</Category>
   <WebUI>http://[IP]:[PORT:8080]/docs</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/hsiang-han/unraid_templates/main/templates/cosyvoice3-api.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/hsiang-han/unraid_templates/main/assets/cosyvoice3-api-icon.png</Icon>
@@ -18,13 +18,13 @@
 
   <Config Name="API Port" Target="8080" Default="8080" Mode="tcp" Description="OpenAI-compatible TTS API port. Swagger docs at /docs" Type="Port" Display="always" Required="true" Mask="false">8080</Config>
 
-  <Config Name="Model Cache" Target="/root/.cache/modelscope/hub" Default="/mnt/user/appdata/cosyvoice3-api/models" Mode="rw" Description="Model download cache. First run downloads ~2GB." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/cosyvoice3-api/models</Config>
+  <Config Name="Model Cache" Target="/root/.cache/models" Default="/mnt/user/appdata/cosyvoice3-api/models" Mode="rw" Description="Model download cache. First run downloads ~10GB. Persists across container recreates." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/cosyvoice3-api/models</Config>
 
-  <Config Name="Model ID" Target="MODEL_DIR" Default="FunAudioLLM/Fun-CosyVoice3-0.5B-2512" Mode="" Description="ModelScope model ID" Type="Variable" Display="advanced" Required="true" Mask="false">FunAudioLLM/Fun-CosyVoice3-0.5B-2512</Config>
+  <Config Name="Model ID" Target="MODEL_DIR" Default="FunAudioLLM/Fun-CosyVoice3-0.5B-2512" Mode="" Description="HuggingFace model ID. Restart required after change." Type="Variable" Display="advanced" Required="true" Mask="false">FunAudioLLM/Fun-CosyVoice3-0.5B-2512</Config>
+
+  <Config Name="HuggingFace Endpoint" Target="HF_ENDPOINT" Default="https://huggingface.co" Mode="" Description="HuggingFace download endpoint. China users: change to https://hf-mirror.com for faster downloads." Type="Variable" Display="always" Required="false" Mask="false">https://huggingface.co</Config>
 
   <Config Name="FP16" Target="FP16" Default="true" Mode="" Description="Half-precision inference. Reduces VRAM by ~50%. Disable (false) only if you experience quality issues." Type="Variable" Display="always" Required="false" Mask="false">true</Config>
-
-  <Config Name="Port" Target="PORT" Default="8080" Mode="" Description="Internal API server port" Type="Variable" Display="advanced" Required="false" Mask="false">8080</Config>
 
   <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="all" Mode="" Description="GPU selection (all, 0, 1, etc.)" Type="Variable" Display="advanced" Required="false" Mask="false">all</Config>
 
