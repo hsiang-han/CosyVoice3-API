@@ -31,8 +31,9 @@ RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pyt
 # Note: openai-whisper is kept because cosyvoice.cli.frontend imports it
 RUN pip install --no-cache-dir setuptools wheel cython numpy && \
     cd cosyvoice_repo && \
-    grep -iv "tensorrt\|deepspeed" requirements.txt > requirements_filtered.txt && \
+    grep -iv "tensorrt\|deepspeed\|openai-whisper" requirements.txt > requirements_filtered.txt && \
     pip install --no-cache-dir -r requirements_filtered.txt && \
+    pip install --no-cache-dir --no-build-isolation openai-whisper && \
     pip install --no-cache-dir modelscope onnxruntime-gpu
 
 # Install API dependencies
