@@ -9,9 +9,12 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - /mnt/user/appdata/cosyvoice3-api/models:/root/.cache/modelscope/hub
+      - /mnt/user/appdata/cosyvoice3-api/models:/root/.cache/models
+      - /mnt/user/appdata/cosyvoice3-api/modelscope:/root/.cache/modelscope/hub
     environment:
       - MODEL_DIR=FunAudioLLM/Fun-CosyVoice3-0.5B-2512
+      - MODEL_SOURCE=modelscope
+      - HF_ENDPOINT=https://huggingface.co
       - FP16=true
       - PORT=8080
     shm_size: "2gb"

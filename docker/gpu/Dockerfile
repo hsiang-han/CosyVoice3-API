@@ -1,17 +1,12 @@
-FROM nvcr.io/nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
+FROM pytorch/pytorch:2.9.1-cuda12.8-cudnn9-devel
 
-ARG PYTHON_VERSION=3.10
 ARG COSYVOICE_REPO=https://github.com/FunAudioLLM/CosyVoice.git
 ARG COSYVOICE_BRANCH=main
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        python${PYTHON_VERSION} python${PYTHON_VERSION}-venv python${PYTHON_VERSION}-dev \
-        python3-pip git git-lfs sox libsox-dev ffmpeg curl \
+        git git-lfs sox libsox-dev ffmpeg curl \
         g++ build-essential && \
-    ln -sf /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && \
-    ln -sf /usr/bin/python${PYTHON_VERSION} /usr/bin/python && \
-    python -m pip install --upgrade pip && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -21,20 +16,16 @@ RUN git clone --depth 1 -b ${COSYVOICE_BRANCH} ${COSYVOICE_REPO} cosyvoice_repo 
     cd cosyvoice_repo && \
     git submodule update --init --recursive --depth 1
 
-# Install PyTorch with CUDA 12.8
-RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+# Pin transformers to 4.51.3 (5.x breaks CosyVoice3 Qwen2 attention)
+RUN pip install --no-cache-dir transformers==4.51.3
 
-# Install CosyVoice dependencies
-# Filter out packages not needed for basic TTS inference:
-# - tensorrt*: TRT acceleration (optional, adds 3GB+)
-# - deepspeed: training only
-# Note: openai-whisper is kept because cosyvoice.cli.frontend imports it
+# Install CosyVoice dependencies (skip torch since base image has it)
 RUN pip install --no-cache-dir setuptools wheel cython numpy && \
     cd cosyvoice_repo && \
-    grep -iv "tensorrt\|deepspeed\|openai-whisper" requirements.txt > requirements_filtered.txt && \
+    grep -iv "torch\|torchaudio\|tensorrt\|deepspeed\|transformers" requirements.txt > requirements_filtered.txt && \
     pip install --no-cache-dir -r requirements_filtered.txt && \
     pip install --no-cache-dir --no-build-isolation openai-whisper && \
-    pip install --no-cache-dir modelscope onnxruntime-gpu
+    pip install --no-cache-dir modelscope onnxruntime-gpu huggingface_hub
 
 # Install API dependencies
 RUN pip install --no-cache-dir fastapi uvicorn[standard] python-multipart numpy soundfile
@@ -45,6 +36,8 @@ COPY docker/scripts/entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 ENV MODEL_DIR=FunAudioLLM/Fun-CosyVoice3-0.5B-2512 \
+    MODEL_SOURCE=modelscope \
+    HF_ENDPOINT=https://huggingface.co \
     FP16=true \
     PORT=8080 \
     PYTHONPATH=/app/cosyvoice_repo:/app/cosyvoice_repo/third_party/Matcha-TTS \
@@ -52,7 +45,7 @@ ENV MODEL_DIR=FunAudioLLM/Fun-CosyVoice3-0.5B-2512 \
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=300s --retries=3 \
     CMD curl -sf http://localhost:${PORT}/health || exit 1
 
 ENTRYPOINT ["./entrypoint.sh"]
