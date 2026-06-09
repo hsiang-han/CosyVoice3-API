@@ -20,6 +20,8 @@
 
   <Config Name="Model Cache" Target="/root/.cache/models" Default="/mnt/user/appdata/cosyvoice3-api/models" Mode="rw" Description="Model download cache. First run downloads ~10GB. Persists across container recreates." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/cosyvoice3-api/models</Config>
 
+  <Config Name="ModelScope Cache" Target="/root/.cache/modelscope/hub" Default="/mnt/user/appdata/cosyvoice3-api/modelscope" Mode="rw" Description="ModelScope cache for wetext (text normalization). Small (~5MB), downloaded once." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/cosyvoice3-api/modelscope</Config>
+
   <Config Name="Model ID" Target="MODEL_DIR" Default="FunAudioLLM/Fun-CosyVoice3-0.5B-2512" Mode="" Description="HuggingFace model ID. Restart required after change." Type="Variable" Display="advanced" Required="true" Mask="false">FunAudioLLM/Fun-CosyVoice3-0.5B-2512</Config>
 
   <Config Name="HuggingFace Endpoint" Target="HF_ENDPOINT" Default="https://huggingface.co" Mode="" Description="HuggingFace download endpoint. China users: change to https://hf-mirror.com for faster downloads." Type="Variable" Display="always" Required="false" Mask="false">https://huggingface.co</Config>
