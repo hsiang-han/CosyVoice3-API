@@ -44,9 +44,7 @@ async def health():
 
 @app.get("/v1/models")
 async def list_models():
-    voices = []
-    if _model and hasattr(_model, "list_available_spks"):
-        voices = _model.list_available_spks()
+    voices = _get_voices()
     return {
         "object": "list",
         "data": [
@@ -62,9 +60,7 @@ async def list_models():
 
 @app.get("/v1/voices")
 async def list_voices():
-    if not _model or not hasattr(_model, "list_available_spks"):
-        return {"voices": []}
-    return {"voices": _model.list_available_spks()}
+    return {"voices": _get_voices()}
 
 
 class SpeechRequest(BaseModel):
@@ -84,8 +80,14 @@ async def text_to_speech(req: SpeechRequest):
     if not req.input.strip():
         raise HTTPException(status_code=400, detail="Input text is empty")
 
-    audio_data = _synthesize(req.input, req.voice, req.instruct_text, req.speed)
+    voices = _get_voices()
+    if not req.voice and not voices:
+        raise HTTPException(
+            status_code=400,
+            detail="No voice specified and no registered voices available. Register a voice first via POST /v1/voices/register",
+        )
 
+    audio_data = _synthesize(req.input, req.voice, req.instruct_text, req.speed)
     wav_bytes = _to_wav(audio_data)
     return Response(content=wav_bytes, media_type="audio/wav")
 
@@ -118,23 +120,78 @@ async def clone_speech(
     return Response(content=wav_bytes, media_type="audio/wav")
 
 
+@app.post("/v1/voices/register")
+async def register_voice(
+    voice_id: str = Form(...),
+    prompt_text: str = Form(...),
+    prompt_wav: UploadFile = File(...),
+):
+    """Register a voice from reference audio. Once registered, use it by name in /v1/audio/speech."""
+    if not _model:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    if not voice_id.strip():
+        raise HTTPException(status_code=400, detail="voice_id is empty")
+
+    if not prompt_text.strip():
+        raise HTTPException(status_code=400, detail="prompt_text is empty")
+
+    existing = _get_voices()
+    if voice_id in existing:
+        raise HTTPException(status_code=409, detail=f"Voice '{voice_id}' already exists. Delete it first or use a different name.")
+
+    prompt_bytes = await prompt_wav.read()
+
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp.write(prompt_bytes)
+        tmp_path = tmp.name
+
+    try:
+        _model.add_zero_shot_spk(prompt_text, tmp_path, voice_id)
+        _model.save_spkinfo()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to register voice: {e}")
+    finally:
+        os.unlink(tmp_path)
+
+    return {"status": "ok", "voice_id": voice_id, "total_voices": len(_get_voices())}
+
+
+@app.delete("/v1/voices/{voice_id}")
+async def delete_voice(voice_id: str):
+    """Delete a registered voice."""
+    if not _model:
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
+    if voice_id not in _get_voices():
+        raise HTTPException(status_code=404, detail=f"Voice '{voice_id}' not found")
+
+    del _model.frontend.spk2info[voice_id]
+    _model.save_spkinfo()
+
+    return {"status": "ok", "deleted": voice_id, "remaining_voices": len(_get_voices())}
+
+
+def _get_voices() -> list:
+    if not _model or not hasattr(_model, "list_available_spks"):
+        return []
+    return _model.list_available_spks()
+
+
 def _synthesize(text: str, voice: Optional[str], instruct_text: Optional[str], speed: float) -> np.ndarray:
     all_audio = []
 
-    if instruct_text and voice:
-        for output in _model.inference_instruct(text, voice, instruct_text, stream=False, speed=speed):
-            all_audio.append(output["tts_speech"].numpy().flatten())
-    elif voice:
-        for output in _model.inference_sft(text, voice, stream=False, speed=speed):
-            all_audio.append(output["tts_speech"].numpy().flatten())
-    else:
-        spks = _model.list_available_spks() if hasattr(_model, "list_available_spks") else []
-        default_voice = spks[0] if spks else None
-        if default_voice:
-            for output in _model.inference_sft(text, default_voice, stream=False, speed=speed):
-                all_audio.append(output["tts_speech"].numpy().flatten())
-        else:
-            raise HTTPException(status_code=400, detail="No voice specified and no default voices available")
+    if not voice:
+        spks = _get_voices()
+        voice = spks[0] if spks else None
+        if not voice:
+            raise HTTPException(status_code=400, detail="No voice available")
+
+    if voice not in _get_voices():
+        raise HTTPException(status_code=400, detail=f"Voice '{voice}' not found. Available: {_get_voices()}")
+
+    for output in _model.inference_sft(text, voice, stream=False, speed=speed):
+        all_audio.append(output["tts_speech"].numpy().flatten())
 
     return np.concatenate(all_audio)
 
@@ -147,7 +204,8 @@ def _clone(text: str, prompt_text: str, prompt_wav_path: str, speed: float) -> n
 
 
 def _to_wav(audio: np.ndarray) -> bytes:
-    audio_int16 = (audio * 32767).astype(np.int16)
+    audio_clipped = np.clip(audio, -1.0, 1.0)
+    audio_int16 = (audio_clipped * 32767).astype(np.int16)
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wf:
         wf.setnchannels(1)
