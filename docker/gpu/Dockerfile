@@ -19,18 +19,38 @@ RUN git clone --depth 1 -b ${COSYVOICE_BRANCH} ${COSYVOICE_REPO} cosyvoice_repo 
 # Pin transformers to 4.51.3 (5.x breaks CosyVoice3 Qwen2 attention)
 RUN pip install --no-cache-dir transformers==4.51.3
 
-# Install CosyVoice dependencies (skip torch since base image has it)
-# openai-whisper uses pkg_resources in setup.py; modern setuptools in pip's
-# build isolation removes it, so we install whisper with --no-build-isolation
-# using the system setuptools which still has pkg_resources
-RUN pip install --no-cache-dir "setuptools<71" wheel cython "numpy<2" && \
-    cd cosyvoice_repo && \
-    grep -iv "^torch==\|^torchaudio==\|tensorrt\|deepspeed\|^transformers==\|openai-whisper\|onnxruntime\|^numpy==" requirements.txt > requirements_filtered.txt && \
-    pip install --no-cache-dir -r requirements_filtered.txt && \
+# Install CosyVoice dependencies explicitly (no grep filtering)
+RUN pip install --no-cache-dir "setuptools<71" wheel cython "numpy==1.26.4" && \
+    pip install --no-cache-dir \
+        conformer==0.3.2 \
+        diffusers==0.29.0 \
+        gdown==5.1.0 \
+        grpcio==1.57.0 \
+        grpcio-tools==1.57.0 \
+        hydra-core==1.3.2 \
+        "HyperPyYAML==1.2.3" \
+        inflect==7.3.1 \
+        librosa==0.10.2 \
+        lightning==2.2.4 \
+        matplotlib==3.7.5 \
+        networkx==3.1 \
+        omegaconf==2.3.0 \
+        onnx==1.16.0 \
+        protobuf==4.25 \
+        pyarrow==18.1.0 \
+        pydantic==2.7.0 \
+        pyworld==0.3.4 \
+        rich==13.7.1 \
+        soundfile==0.12.1 \
+        tensorboard==2.14.0 \
+        x-transformers==2.11.24 \
+        uvicorn==0.30.0 \
+        wetext==0.0.4 \
+        wget==3.2 && \
     pip install --no-cache-dir --no-build-isolation openai-whisper==20231117 && \
     pip install --no-cache-dir modelscope "onnxruntime-gpu>=1.19" huggingface_hub && \
     pip install --no-cache-dir --force-reinstall torch==2.9.1 torchaudio==2.9.1 torchvision --index-url https://download.pytorch.org/whl/cu128 && \
-    pip install --no-cache-dir "numpy<2"
+    pip install --no-cache-dir "numpy==1.26.4"
 
 # Install API dependencies
 RUN pip install --no-cache-dir fastapi uvicorn[standard] python-multipart soundfile
