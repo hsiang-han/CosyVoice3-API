@@ -7,7 +7,7 @@ from typing import Optional
 
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 MODEL_DIR = os.getenv("MODEL_DIR", "FunAudioLLM/Fun-CosyVoice3-0.5B-2512")
@@ -69,7 +69,7 @@ class SpeechRequest(BaseModel):
     voice: Optional[str] = None
     response_format: str = "wav"
     speed: float = 1.0
-    instruct_text: Optional[str] = None
+    stream: bool = False
 
 
 @app.post("/v1/audio/speech")
@@ -87,7 +87,18 @@ async def text_to_speech(req: SpeechRequest):
             detail="No voice specified and no registered voices available. Register a voice first via POST /v1/voices/register",
         )
 
-    audio_data = _synthesize(req.input, req.voice, req.instruct_text, req.speed)
+    voice = req.voice or voices[0]
+    if voice not in _get_voices():
+        raise HTTPException(status_code=400, detail=f"Voice '{voice}' not found. Available: {_get_voices()}")
+
+    if req.stream:
+        return StreamingResponse(
+            _stream_synthesis(req.input, voice, req.speed),
+            media_type="audio/pcm",
+            headers={"X-Sample-Rate": str(SAMPLE_RATE), "X-Channels": "1", "X-Bit-Depth": "16"},
+        )
+
+    audio_data = _synthesize(req.input, voice, req.speed)
     wav_bytes = _to_wav(audio_data)
     return Response(content=wav_bytes, media_type="audio/wav")
 
@@ -178,22 +189,18 @@ def _get_voices() -> list:
     return _model.list_available_spks()
 
 
-def _synthesize(text: str, voice: Optional[str], instruct_text: Optional[str], speed: float) -> np.ndarray:
+def _synthesize(text: str, voice: str, speed: float) -> np.ndarray:
     all_audio = []
-
-    if not voice:
-        spks = _get_voices()
-        voice = spks[0] if spks else None
-        if not voice:
-            raise HTTPException(status_code=400, detail="No voice available")
-
-    if voice not in _get_voices():
-        raise HTTPException(status_code=400, detail=f"Voice '{voice}' not found. Available: {_get_voices()}")
-
     for output in _model.inference_sft(text, voice, stream=False, speed=speed):
         all_audio.append(output["tts_speech"].numpy().flatten())
-
     return np.concatenate(all_audio)
+
+
+def _stream_synthesis(text: str, voice: str, speed: float):
+    for output in _model.inference_sft(text, voice, stream=True, speed=speed):
+        chunk = output["tts_speech"].numpy().flatten()
+        chunk_clipped = np.clip(chunk, -1.0, 1.0)
+        yield (chunk_clipped * 32767).astype(np.int16).tobytes()
 
 
 def _clone(text: str, prompt_text: str, prompt_wav_path: str, speed: float) -> np.ndarray:

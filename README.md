@@ -1,53 +1,69 @@
 # CosyVoice3-API
 
-[English](README.md) | [中文](README_zh.md)
+[中文文档](README_zh.md)
 
 OpenAI-compatible Text-to-Speech API powered by [CosyVoice 3](https://github.com/FunAudioLLM/CosyVoice) (Alibaba FunAudioLLM).
 
-No extra services — just the model served via FastAPI with an OpenAI-compatible endpoint. Supports built-in voices, instruction-based control, and zero-shot voice cloning.
+Zero-shot voice cloning with 3-second reference audio. Register voices once, use them forever. Supports RTX 50-series (Blackwell) GPUs.
 
-## What this adds
+## Features
 
-The official CosyVoice repo requires manual setup and has no Docker entrypoint for production use. This project adds:
-- Auto-start API server on container launch
-- OpenAI-compatible `/v1/audio/speech` endpoint
-- Zero-shot voice cloning endpoint `/v1/audio/speech/clone`
-- Environment variables for GPU/memory control
-- Unraid Community Applications template
+- OpenAI-compatible `/v1/audio/speech` endpoint (JSON body)
+- Zero-shot voice cloning from any reference audio
+- Voice registration — clone once, use by name afterwards
+- Streaming output support (`"stream": true` returns raw PCM)
+- 9 languages, 18 Chinese dialects
+- Supports RTX 50-series (Blackwell) and older GPUs
 
 ## Quick Start
 
 ```bash
 docker run -d --gpus all --shm-size=2g \
   -p 8080:8080 \
-  -v /path/to/models:/root/.cache/modelscope/hub \
+  -v /mnt/user/appdata/cosyvoice3-api/models:/root/.cache/models \
+  -e HF_ENDPOINT=https://huggingface.co \
+  --name cosyvoice3-api \
   ghcr.io/hsiang-han/cosyvoice3-api:latest
 ```
 
-First start downloads the model (~2GB).
+First start downloads model files (~10GB) from HuggingFace. China users: set `HF_ENDPOINT=https://hf-mirror.com` for faster downloads.
 
 ## Usage
 
-### Text-to-Speech (OpenAI-compatible)
+### Step 1: Register a voice (required for first use)
+
+CosyVoice3 has no built-in voices. You need to register at least one voice from a reference audio:
+
+```bash
+curl -X POST http://localhost:8080/v1/voices/register \
+  -F "voice_id=my_voice" \
+  -F "prompt_text=这是参考音频中说的话的文字内容" \
+  -F "prompt_wav=@reference.wav"
+```
+
+Registered voices persist across container restarts.
+
+### Step 2: Generate speech
 
 ```bash
 curl -X POST http://localhost:8080/v1/audio/speech \
-  -F "input=你好，世界" \
-  -F "voice=中文女" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "你好，世界", "voice": "my_voice"}' \
   --output speech.wav
 ```
 
-### With instruction control
+### Streaming output
 
 ```bash
 curl -X POST http://localhost:8080/v1/audio/speech \
-  -F "input=今天天气真好" \
-  -F "voice=中文女" \
-  -F "instruct_text=用开心的语气说" \
-  --output happy.wav
+  -H "Content-Type: application/json" \
+  -d '{"input": "你好，世界", "voice": "my_voice", "stream": true}' \
+  --output speech.pcm
 ```
 
-### Voice cloning
+Returns raw PCM (16-bit, mono, 24000Hz). Headers include `X-Sample-Rate`, `X-Channels`, `X-Bit-Depth`.
+
+### Voice cloning (one-off, without registration)
 
 ```bash
 curl -X POST http://localhost:8080/v1/audio/speech/clone \
@@ -57,44 +73,44 @@ curl -X POST http://localhost:8080/v1/audio/speech/clone \
   --output cloned.wav
 ```
 
-### List available voices
+### List / delete voices
 
 ```bash
 curl http://localhost:8080/v1/voices
+
+curl -X DELETE http://localhost:8080/v1/voices/my_voice
 ```
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MODEL_DIR` | `FunAudioLLM/Fun-CosyVoice3-0.5B-2512` | ModelScope model ID |
-| `FP16` | `true` | Half-precision inference. Reduces VRAM ~50%. |
-| `PORT` | `8080` | API server port |
-
-## VRAM Usage
-
-| Config | Estimated VRAM |
-|--------|---------------|
-| FP16=true (default) | ~3-4GB |
-| FP16=false | ~6-8GB |
-
-## Unraid Install
-
-1. Add template repo: `https://github.com/hsiang-han/unraid_templates`
-2. Find "CosyVoice3-API" in Community Applications
-3. Configure device and FP16 settings
-4. Start — first launch downloads model, subsequent starts are fast
 
 ## API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/v1/audio/speech` | POST | Text-to-speech (OpenAI-compatible) |
-| `/v1/audio/speech/clone` | POST | Zero-shot voice cloning |
-| `/v1/voices` | GET | List available voices |
+| `/v1/audio/speech` | POST | Text-to-speech (JSON body, OpenAI-compatible) |
+| `/v1/audio/speech/clone` | POST | One-off voice cloning (Form + file upload) |
+| `/v1/voices/register` | POST | Register a voice from reference audio |
+| `/v1/voices/{voice_id}` | DELETE | Delete a registered voice |
+| `/v1/voices` | GET | List registered voices |
 | `/v1/models` | GET | List models |
 | `/health` | GET | Health check |
 | `/docs` | GET | Swagger documentation |
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| MODEL_DIR | FunAudioLLM/Fun-CosyVoice3-0.5B-2512 | HuggingFace model ID or local path |
+| HF_ENDPOINT | https://huggingface.co | HuggingFace mirror (China: https://hf-mirror.com) |
+| FP16 | true | Half-precision inference. Reduces VRAM ~50% |
+
+## Hardware Requirements
+
+- NVIDIA GPU with 4GB+ VRAM (FP16) or 8GB+ (FP32)
+- NVIDIA driver 550+ (Ampere/Ada) or 570+ (Blackwell RTX 50-series)
+- Docker with NVIDIA Container Toolkit
+
+## Credits
+
+- [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) by Alibaba FunAudioLLM — the model and inference framework
 
 ## License
 
