@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir transformers==4.51.3
 # using the system setuptools which still has pkg_resources
 RUN pip install --no-cache-dir "setuptools<71" wheel cython "numpy<2" && \
     cd cosyvoice_repo && \
-    grep -iv "torch\|torchaudio\|tensorrt\|deepspeed\|transformers\|openai-whisper\|onnxruntime\|numpy" requirements.txt > requirements_filtered.txt && \
+    grep -iv "^torch==\|^torchaudio==\|tensorrt\|deepspeed\|^transformers==\|openai-whisper\|onnxruntime\|^numpy==" requirements.txt > requirements_filtered.txt && \
     pip install --no-cache-dir -r requirements_filtered.txt && \
     pip install --no-cache-dir --no-build-isolation openai-whisper==20231117 && \
     pip install --no-cache-dir modelscope "onnxruntime-gpu>=1.19" huggingface_hub && \
