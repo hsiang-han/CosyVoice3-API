@@ -9,7 +9,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/hsiang-han/CosyVoice3-API/issues</Support>
   <Project>https://github.com/hsiang-han/CosyVoice3-API</Project>
-  <Overview>OpenAI-compatible Text-to-Speech API powered by CosyVoice 3 (Alibaba FunAudioLLM). State-of-the-art Chinese TTS with 18 dialects, 9 languages, built-in voices, instruction-based control, and zero-shot voice cloning. CUDA 12.8 (Blackwell/Ada/Ampere). First start downloads model files (~10GB) from HuggingFace. Supports RTX 50-series GPUs. China users: set HF_ENDPOINT to https://hf-mirror.com for faster downloads. Requires NVIDIA GPU with driver 550+.</Overview>
+  <Overview>OpenAI-compatible Text-to-Speech API powered by CosyVoice 3 (Alibaba FunAudioLLM). State-of-the-art Chinese TTS with 18 dialects, 9 languages, and zero-shot voice cloning. Register voices from 3-second reference audio, then use by name. CUDA 12.8 (Blackwell/Ada/Ampere). First start downloads model files (~10GB) from HuggingFace. Supports RTX 50-series GPUs. China users: set HF_ENDPOINT to https://hf-mirror.com for faster downloads. Requires NVIDIA GPU with driver 550+.</Overview>
   <Category>AI: Productivity: Tools:</Category>
   <WebUI>http://[IP]:[PORT:8080]/docs</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/hsiang-han/unraid_templates/main/templates/cosyvoice3-api.xml</TemplateURL>
